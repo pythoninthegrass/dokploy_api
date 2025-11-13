@@ -10,7 +10,7 @@ extract OpenAPI specifications, and generate documentation.
 
 ## General
 
-<!-- TODO -->
+- Always activate the virtual environment (.venv) via `uv run`
 
 ## Context7 Libraries
 
