@@ -7,17 +7,28 @@ from typing import Any, Optional
 def load_config(env_file: Path | None = None) -> dict[str, str | None]:
     """Load configuration from .env file or environment.
 
+    Search order for .env file:
+    1. Current working directory (.env)
+    2. Parent directory of this module (for local development)
+    3. Fall back to environment variables
+
     Args:
-        env_file: Path to .env file. If None, searches parent directory.
+        env_file: Path to .env file. If None, searches automatically.
 
     Returns:
         Dict with 'api_key' and 'base_url' keys.
     """
-    if env_file is None:
-        env_file = Path(__file__).parent.parent / ".env"
-
     import os
     from decouple import Config, RepositoryEnv
+
+    if env_file is None:
+        # Check current working directory first (for tool installations)
+        cwd_env = Path.cwd() / ".env"
+        if cwd_env.exists():
+            env_file = cwd_env
+        else:
+            # Fall back to parent directory (for local development)
+            env_file = Path(__file__).parent.parent / ".env"
 
     if env_file.exists():
         config = Config(RepositoryEnv(str(env_file)))
@@ -26,6 +37,7 @@ def load_config(env_file: Path | None = None) -> dict[str, str | None]:
             "base_url": config.get("BASE_URL", default="http://10.5.162.35:3000"),
         }
     else:
+        # Fall back to environment variables
         return {
             "api_key": os.environ.get("API_KEY"),
             "base_url": os.environ.get("BASE_URL", "http://10.5.162.35:3000"),
