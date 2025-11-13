@@ -41,6 +41,8 @@ dokploy deploy --app-id <id>
 API_KEY="key" BASE_URL="https://your-dokploy-instance.com" dokploy list project
 ```
 
+**Tip:** You can also use a `.env` file in your current working directory for project-specific configurations when using the global tool.
+
 ### Local Development
 
 For local development, create a `.env` file in the project root:
@@ -131,9 +133,10 @@ BASE_URL=https://your-dokploy-instance.com
 ### Priority Order
 
 Configuration is loaded in this order (first found wins):
-1. `.env` file (if it exists relative to script location)
-2. Environment variables (`os.environ`)
-3. Command-line flags (`--api-key`, `--url`)
+1. `.env` file in current working directory
+2. `.env` file in repository root (for local development)
+3. Environment variables (`os.environ`)
+4. Command-line flags (`--api-key`, `--url`) - highest priority, overrides all
 
 ## Common Commands
 

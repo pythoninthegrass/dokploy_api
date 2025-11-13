@@ -10,20 +10,102 @@ Programmatically interact with a [Dokploy](https://dokploy.com/) instance via th
 
 * [mise](https://mise.jdx.dev/getting-started.html)
 
-## Quickstart
+## Installation
 
 ```bash
-# install via uv
 uv tool install git+https://github.com/pythoninthegrass/dokploy_api
+```
 
-# Configure via environment variables
-export API_KEY="your-api-key"
+## Configuration
+
+The `dokploy` command needs your Dokploy API credentials. Configure using one of these methods:
+
+### Option 1: Environment Variables (Recommended)
+
+Set persistent environment variables in your shell profile:
+
+```bash
+# Add to ~/.bashrc, ~/.zshrc, or equivalent
+export API_KEY="your-dokploy-api-key"
 export BASE_URL="https://your-dokploy-instance.com"
+```
 
-# Add to shell profile for persistence (~/.bashrc, ~/.zshrc, etc.)
-echo 'export API_KEY="your-api-key"' >> ~/.bashrc
-echo 'export BASE_URL="https://your-dokploy-instance.com"' >> ~/.bashrc
+Reload your shell or run:
+```bash
+source ~/.bashrc  # or ~/.zshrc
+```
 
-# Set variables per-command:
-API_KEY="key" BASE_URL="https://your-dokploy-instance.com" dokploy list project
+### Option 2: Per-Command Environment Variables
+
+Set variables for a single command:
+
+```bash
+API_KEY="your-key" BASE_URL="https://dokploy.example.com" dokploy list project
+```
+
+### Option 3: `.env` File (Project-Specific)
+
+Create a `.env` file in your working directory:
+
+```bash
+cat > .env << 'EOF'
+API_KEY=your-dokploy-api-key
+BASE_URL=https://your-dokploy-instance.com
+EOF
+```
+
+Then run `dokploy` from that directory:
+```bash
+cd /path/to/your/project
+dokploy list project
+```
+
+### Configuration Priority
+
+Settings are loaded in this order (first found wins):
+
+1. `.env` file in current working directory
+2. Environment variables
+3. Command-line flags (`--api-key`, `--url`) - override all others
+
+## Usage
+
+List all projects:
+```bash
+dokploy list project
+```
+
+Get application details:
+```bash
+dokploy get application <app-id>
+```
+
+Trigger deployment:
+```bash
+dokploy deploy --app-id <app-id>
+```
+
+View all available commands:
+```bash
+dokploy --help
+```
+
+## Tool Management
+
+### Update to Latest Version
+
+```bash
+uv tool upgrade dokploy-api
+```
+
+### Uninstall
+
+```bash
+uv tool uninstall dokploy-api
+```
+
+### Check Installation
+
+```bash
+uv tool list
 ```
