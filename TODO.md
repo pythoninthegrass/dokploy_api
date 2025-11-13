@@ -1,4 +1,4 @@
 # TODO.md
 
+- ~~Add release-please~~
 - Add renovate
-- Add release-please
