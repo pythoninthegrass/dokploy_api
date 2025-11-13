@@ -80,8 +80,7 @@ uv run ruff format .
 ## Core Files
 
 ### Scripts (4)
-- **api.py** (622 lines) - Interactive API testing tool for CRUD operations, listing,
-querying, and batch operations
+- **api.py** (622 lines) - Interactive API testing tool (installed as `dokploy` command) for CRUD operations, listing, querying, and batch operations
 - **extract.py** (316 lines) - Extract and analyze OpenAPI specifications from live
 Dokploy instances
 - **schema.py** (158 lines) - Generate markdown documentation from OpenAPI resource
@@ -297,17 +296,17 @@ Test API connectivity and basic operations:
 # Test API key validity - list all projects
 curl -s -H "accept: application/json" -H "x-api-key: YOUR_API_KEY" \
   "https://your-dokploy.com/api/project.all" | jq .
-# Alternative: uv run api.py list project
+# Alternative: dokploy list project
 
 # Get project details with applications
 curl -s -H "accept: application/json" -H "x-api-key: YOUR_API_KEY" \
   "https://your-dokploy.com/api/project.one?projectId=PROJECT_ID" | jq .
-# Alternative: uv run api.py get project PROJECT_ID
+# Alternative: dokploy get project PROJECT_ID
 
 # Get application details
 curl -s -H "accept: application/json" -H "x-api-key: YOUR_API_KEY" \
   "https://your-dokploy.com/api/application.one?applicationId=APP_ID" | jq .
-# Alternative: uv run api.py get application APP_ID
+# Alternative: dokploy get application APP_ID
 
 # Check domain configuration (requires curl - non-standard query params)
 curl -s -H "accept: application/json" -H "x-api-key: YOUR_API_KEY" \
@@ -326,7 +325,7 @@ curl -s -H "accept: application/json" -H "x-api-key: YOUR_API_KEY" \
   "https://your-dokploy.com/api/docker.getContainersByAppNameMatch?appName=APP_NAME" | jq .
 ```
 
-**Note:** api.py supports standard CRUD operations (`.create`, `.one`, `.update`, `.remove`, `.delete`, `.all`). For specialized endpoints like `domain.byApplicationId`, `docker.getContainersByAppNameMatch`, or `application.deploy`, use curl directly.
+**Note:** The `dokploy` command supports standard CRUD operations (`.create`, `.one`, `.update`, `.remove`, `.delete`, `.all`). For specialized endpoints like `domain.byApplicationId`, `docker.getContainersByAppNameMatch`, or `application.deploy`, use curl directly.
 
 Connect application to GitHub provider:
 ```bash

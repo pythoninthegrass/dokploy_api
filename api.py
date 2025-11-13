@@ -6,22 +6,22 @@ Dokploy API Tool
 Test and inspect Dokploy API endpoints to understand response formats.
 
 Usage:
-    api.py create <RESOURCE> [--api-key KEY] [--url URL]
-    api.py get <RESOURCE> <ID> [--api-key KEY] [--url URL]
-    api.py update <RESOURCE> <ID> [--api-key KEY] [--url URL]
-    api.py delete <RESOURCE> <ID> [--api-key KEY] [--url URL]
-    api.py list <RESOURCE> [--limit N] [--api-key KEY] [--url URL]
-    api.py query <RESOURCE> [--filter field=value] [--limit N] [--api-key KEY] [--url URL]
-    api.py batch-delete <RESOURCE> <ID1> <ID2> ... [--delay SECS] [--api-key KEY] [--url URL]
-    api.py domains --app-id <APP_ID> [--api-key KEY] [--url URL]
-    api.py deployments --app-id <APP_ID> [--limit N] [--api-key KEY] [--url URL]
-    api.py deploy --app-id <APP_ID> [--title TITLE] [--description DESC] [--api-key KEY] [--url URL]
-    api.py redeploy --app-id <APP_ID> [--title TITLE] [--description DESC] [--api-key KEY] [--url URL]
-    api.py github-providers [--api-key KEY] [--url URL]
-    api.py connect-github --app-id <APP_ID> --github-id <PROVIDER_ID> --owner <OWNER> [--repository REPO] [--branch BRANCH] [--api-key KEY] [--url URL]
-    api.py test-github --github-id <PROVIDER_ID> [--api-key KEY] [--url URL]
-    api.py docker-containers --app-name <APP_NAME> [--app-type TYPE] [--server-id ID] [--api-key KEY] [--url URL]
-    api.py docker-list [--server-id ID] [--api-key KEY] [--url URL]
+    dokploy create <RESOURCE> [--api-key KEY] [--url URL]
+    dokploy get <RESOURCE> <ID> [--api-key KEY] [--url URL]
+    dokploy update <RESOURCE> <ID> [--api-key KEY] [--url URL]
+    dokploy delete <RESOURCE> <ID> [--api-key KEY] [--url URL]
+    dokploy list <RESOURCE> [--limit N] [--api-key KEY] [--url URL]
+    dokploy query <RESOURCE> [--filter field=value] [--limit N] [--api-key KEY] [--url URL]
+    dokploy batch-delete <RESOURCE> <ID1> <ID2> ... [--delay SECS] [--api-key KEY] [--url URL]
+    dokploy domains --app-id <APP_ID> [--api-key KEY] [--url URL]
+    dokploy deployments --app-id <APP_ID> [--limit N] [--api-key KEY] [--url URL]
+    dokploy deploy --app-id <APP_ID> [--title TITLE] [--description DESC] [--api-key KEY] [--url URL]
+    dokploy redeploy --app-id <APP_ID> [--title TITLE] [--description DESC] [--api-key KEY] [--url URL]
+    dokploy github-providers [--api-key KEY] [--url URL]
+    dokploy connect-github --app-id <APP_ID> --github-id <PROVIDER_ID> --owner <OWNER> [--repository REPO] [--branch BRANCH] [--api-key KEY] [--url URL]
+    dokploy test-github --github-id <PROVIDER_ID> [--api-key KEY] [--url URL]
+    dokploy docker-containers --app-name <APP_NAME> [--app-type TYPE] [--server-id ID] [--api-key KEY] [--url URL]
+    dokploy docker-list [--server-id ID] [--api-key KEY] [--url URL]
 
 Commands:
     create: Test a create endpoint and show response
