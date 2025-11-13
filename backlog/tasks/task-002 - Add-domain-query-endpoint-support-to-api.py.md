@@ -1,10 +1,10 @@
 ---
-id: task-001
+id: task-002
 title: Add domain query endpoint support to api.py
 status: Done
 assignee: []
-created_date: '2025-11-13 17:09'
-updated_date: '2025-11-13 17:28'
+created_date: '2025-11-13 17:10'
+updated_date: '2025-11-13 17:39'
 labels:
   - enhancement
   - api
@@ -25,9 +25,3 @@ Add support for domain.byApplicationId endpoint which uses non-standard query pa
 - [x] #2 Output displays domain details in a formatted table
 - [x] #3 Error handling for missing or invalid application IDs
 <!-- AC:END -->
-
-## Implementation Notes
-
-<!-- SECTION:NOTES:BEGIN -->
-Implemented domains command with --app-id option. Returns formatted table with domain details (ID, host, HTTPS status, port, path, certificate type). Includes error handling for 404 (not found) and 401 (auth) errors. Also displays full JSON details for the first domain. Tested successfully with both valid and invalid application IDs.
-<!-- SECTION:NOTES:END -->
