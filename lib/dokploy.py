@@ -24,11 +24,8 @@ def load_config(env_file: Path | None = None) -> dict[str, str | None]:
     if env_file is None:
         # Check current working directory first (for tool installations)
         cwd_env = Path.cwd() / ".env"
-        if cwd_env.exists():
-            env_file = cwd_env
-        else:
-            # Fall back to parent directory (for local development)
-            env_file = Path(__file__).parent.parent / ".env"
+        # Fall back to parent directory (for local development)
+        env_file = cwd_env if cwd_env.exists() else Path(__file__).parent.parent / ".env"
 
     if env_file.exists():
         config = Config(RepositoryEnv(str(env_file)))
