@@ -27,6 +27,10 @@ Usage:
     api.py list <RESOURCE> [--limit N] [--api-key KEY] [--url URL]
     api.py query <RESOURCE> [--filter field=value] [--limit N] [--api-key KEY] [--url URL]
     api.py batch-delete <RESOURCE> <ID1> <ID2> ... [--delay SECS] [--api-key KEY] [--url URL]
+    api.py domains --app-id <APP_ID> [--api-key KEY] [--url URL]
+    api.py deployments --app-id <APP_ID> [--limit N] [--api-key KEY] [--url URL]
+    api.py deploy --app-id <APP_ID> [--title TITLE] [--description DESC] [--api-key KEY] [--url URL]
+    api.py redeploy --app-id <APP_ID> [--title TITLE] [--description DESC] [--api-key KEY] [--url URL]
 
 Commands:
     create: Test a create endpoint and show response
@@ -36,6 +40,10 @@ Commands:
     list: List all resources of a given type
     query: Query resources with filters
     batch-delete: Delete multiple resources by ID
+    domains: Get domain configuration for a specific application
+    deployments: List deployment history for an application
+    deploy: Trigger a new deployment for an application
+    redeploy: Trigger a redeployment for an application
 
 Resources:
     application, project, compose, domain, etc.
@@ -617,6 +625,313 @@ def batch_delete(resource, resource_ids, api_key, url, delay):
         sys.exit(1)
     else:
         console.print(f"\n[bold green]✓ All {total} {resource}(s) deleted successfully![/bold green]")
+
+
+@cli.command()
+@click.option("--app-id", required=True, help="Application ID to query domains for")
+@click.option("--api-key", envvar="API_KEY", help="Dokploy API key")
+@click.option("--url", envvar="BASE_URL", help="Dokploy base URL")
+def domains(app_id, api_key, url):
+    """Get domains for a specific application"""
+    config = load_config()
+    api_key = api_key or config["api_key"]
+    base_url = url or config["base_url"]
+
+    if not api_key:
+        console.print("[red]Error: API_KEY not found[/red]")
+        sys.exit(1)
+
+    endpoint = f"{base_url}/api/domain.byApplicationId?applicationId={app_id}"
+    headers = {
+        "accept": "application/json",
+        "x-api-key": api_key,
+    }
+
+    console.print(Panel(f"Testing: GET {endpoint}", style="bold cyan"))
+
+    try:
+        response = requests.get(endpoint, headers=headers)
+
+        console.print(f"\n[bold]Status Code:[/bold] {response.status_code}")
+
+        if response.status_code == 200:
+            result = response.json()
+
+            if isinstance(result, list):
+                console.print(f"\n[bold green]Found {len(result)} domain(s) for application {app_id}[/bold green]")
+
+                if result:
+                    console.print("\n[bold]Domain Configuration:[/bold]")
+
+                    table = Table(show_header=True, header_style="bold magenta")
+                    table.add_column("Domain ID", style="cyan")
+                    table.add_column("Host", style="green")
+                    table.add_column("HTTPS", style="yellow")
+                    table.add_column("Port", style="blue")
+                    table.add_column("Path", style="cyan")
+                    table.add_column("Certificate Type", style="magenta")
+
+                    for domain in result:
+                        table.add_row(
+                            str(domain.get("domainId", ""))[:30],
+                            str(domain.get("host", "")),
+                            "✓" if domain.get("https") else "✗",
+                            str(domain.get("port", "")),
+                            str(domain.get("path", "")),
+                            str(domain.get("certificateType", ""))
+                        )
+
+                    console.print(table)
+
+                    # Show full details for first domain
+                    if len(result) > 0:
+                        console.print("\n[bold]Full Details (first domain):[/bold]")
+                        console.print(Syntax(json.dumps(result[0], indent=2), "json", theme="monokai"))
+                else:
+                    console.print(f"\n[yellow]No domains found for application {app_id}[/yellow]")
+            else:
+                console.print("\n[bold green]Response Body:[/bold green]")
+                console.print(Syntax(json.dumps(result, indent=2), "json", theme="monokai"))
+        else:
+            console.print("\n[bold red]Error Response:[/bold red]")
+            try:
+                error_data = response.json()
+                console.print(Syntax(json.dumps(error_data, indent=2), "json", theme="monokai"))
+
+                # Provide helpful error messages
+                if response.status_code == 404:
+                    console.print(f"\n[yellow]Application with ID '{app_id}' not found or has no domains[/yellow]")
+                elif response.status_code == 401:
+                    console.print("\n[yellow]Authentication failed. Check your API key.[/yellow]")
+            except json.JSONDecodeError:
+                console.print(response.text)
+            sys.exit(1)
+
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]Request failed: {e}[/red]")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Failed to parse JSON response: {e}[/red]")
+        sys.exit(1)
+
+
+@cli.command()
+@click.option("--app-id", required=True, help="Application ID to list deployments for")
+@click.option("--api-key", envvar="API_KEY", help="Dokploy API key")
+@click.option("--url", envvar="BASE_URL", help="Dokploy base URL")
+@click.option("--limit", type=int, help="Limit number of results")
+def deployments(app_id, api_key, url, limit):
+    """List deployment history for an application"""
+    config = load_config()
+    api_key = api_key or config["api_key"]
+    base_url = url or config["base_url"]
+
+    if not api_key:
+        console.print("[red]Error: API_KEY not found[/red]")
+        sys.exit(1)
+
+    endpoint = f"{base_url}/api/deployment.all?applicationId={app_id}"
+    headers = {
+        "accept": "application/json",
+        "x-api-key": api_key,
+    }
+
+    console.print(Panel(f"Testing: GET {endpoint}", style="bold cyan"))
+
+    try:
+        response = requests.get(endpoint, headers=headers)
+
+        console.print(f"\n[bold]Status Code:[/bold] {response.status_code}")
+
+        if response.status_code == 200:
+            result = response.json()
+
+            if isinstance(result, list):
+                items = result[:limit] if limit else result
+                console.print(f"\n[bold green]Found {len(result)} deployment(s) for application {app_id}[/bold green]")
+
+                if items:
+                    console.print(f"\n[bold]Showing {len(items)} deployment(s):[/bold]")
+
+                    table = Table(show_header=True, header_style="bold magenta")
+                    table.add_column("Deployment ID", style="cyan", width=30)
+                    table.add_column("Status", style="green")
+                    table.add_column("Created At", style="yellow")
+                    table.add_column("Title", style="blue", width=30)
+                    table.add_column("Log Path", style="magenta", width=40)
+
+                    for deployment in items:
+                        table.add_row(
+                            str(deployment.get("deploymentId", ""))[:30],
+                            str(deployment.get("status", "")),
+                            str(deployment.get("createdAt", ""))[:19],
+                            str(deployment.get("title", ""))[:30],
+                            str(deployment.get("logPath", ""))[:40]
+                        )
+
+                    console.print(table)
+
+                    # Show full details for first deployment
+                    if len(items) > 0:
+                        console.print("\n[bold]Full Details (most recent deployment):[/bold]")
+                        console.print(Syntax(json.dumps(items[0], indent=2), "json", theme="monokai"))
+                else:
+                    console.print(f"\n[yellow]No deployments found for application {app_id}[/yellow]")
+            else:
+                console.print("\n[bold green]Response Body:[/bold green]")
+                console.print(Syntax(json.dumps(result, indent=2), "json", theme="monokai"))
+        else:
+            console.print("\n[bold red]Error Response:[/bold red]")
+            try:
+                error_data = response.json()
+                console.print(Syntax(json.dumps(error_data, indent=2), "json", theme="monokai"))
+
+                if response.status_code == 404:
+                    console.print(f"\n[yellow]Application with ID '{app_id}' not found[/yellow]")
+                elif response.status_code == 401:
+                    console.print("\n[yellow]Authentication failed. Check your API key.[/yellow]")
+            except json.JSONDecodeError:
+                console.print(response.text)
+            sys.exit(1)
+
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]Request failed: {e}[/red]")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Failed to parse JSON response: {e}[/red]")
+        sys.exit(1)
+
+
+@cli.command()
+@click.option("--app-id", required=True, help="Application ID to deploy")
+@click.option("--title", help="Optional deployment title")
+@click.option("--description", help="Optional deployment description")
+@click.option("--api-key", envvar="API_KEY", help="Dokploy API key")
+@click.option("--url", envvar="BASE_URL", help="Dokploy base URL")
+def deploy(app_id, title, description, api_key, url):
+    """Trigger a new deployment for an application"""
+    config = load_config()
+    api_key = api_key or config["api_key"]
+    base_url = url or config["base_url"]
+
+    if not api_key:
+        console.print("[red]Error: API_KEY not found[/red]")
+        sys.exit(1)
+
+    endpoint = f"{base_url}/api/application.deploy"
+    headers = {
+        "accept": "application/json",
+        "x-api-key": api_key,
+        "Content-Type": "application/json"
+    }
+
+    # Build request data
+    data = {"applicationId": app_id}
+    if title:
+        data["title"] = title
+    if description:
+        data["description"] = description
+
+    console.print(Panel(f"Testing: POST {endpoint}", style="bold cyan"))
+    console.print("\n[bold]Request Data:[/bold]")
+    console.print(Syntax(json.dumps(data, indent=2), "json", theme="monokai"))
+
+    try:
+        response = requests.post(endpoint, headers=headers, json=data)
+
+        console.print(f"\n[bold]Status Code:[/bold] {response.status_code}")
+
+        if response.status_code == 200:
+            result = response.json()
+            console.print("\n[bold green]Response Body:[/bold green]")
+            console.print(Syntax(json.dumps(result, indent=2), "json", theme="monokai"))
+            console.print(f"\n[bold green]✓ Deployment triggered successfully for application: {app_id}[/bold green]")
+        else:
+            console.print("\n[bold red]Error Response:[/bold red]")
+            try:
+                error_data = response.json()
+                console.print(Syntax(json.dumps(error_data, indent=2), "json", theme="monokai"))
+
+                if response.status_code == 404:
+                    console.print(f"\n[yellow]Application with ID '{app_id}' not found[/yellow]")
+                elif response.status_code == 401:
+                    console.print("\n[yellow]Authentication failed. Check your API key.[/yellow]")
+            except json.JSONDecodeError:
+                console.print(response.text)
+            sys.exit(1)
+
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]Request failed: {e}[/red]")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Failed to parse JSON response: {e}[/red]")
+        sys.exit(1)
+
+
+@cli.command()
+@click.option("--app-id", required=True, help="Application ID to redeploy")
+@click.option("--title", help="Optional redeployment title")
+@click.option("--description", help="Optional redeployment description")
+@click.option("--api-key", envvar="API_KEY", help="Dokploy API key")
+@click.option("--url", envvar="BASE_URL", help="Dokploy base URL")
+def redeploy(app_id, title, description, api_key, url):
+    """Trigger a redeployment for an application"""
+    config = load_config()
+    api_key = api_key or config["api_key"]
+    base_url = url or config["base_url"]
+
+    if not api_key:
+        console.print("[red]Error: API_KEY not found[/red]")
+        sys.exit(1)
+
+    endpoint = f"{base_url}/api/application.redeploy"
+    headers = {
+        "accept": "application/json",
+        "x-api-key": api_key,
+        "Content-Type": "application/json"
+    }
+
+    # Build request data
+    data = {"applicationId": app_id}
+    if title:
+        data["title"] = title
+    if description:
+        data["description"] = description
+
+    console.print(Panel(f"Testing: POST {endpoint}", style="bold cyan"))
+    console.print("\n[bold]Request Data:[/bold]")
+    console.print(Syntax(json.dumps(data, indent=2), "json", theme="monokai"))
+
+    try:
+        response = requests.post(endpoint, headers=headers, json=data)
+
+        console.print(f"\n[bold]Status Code:[/bold] {response.status_code}")
+
+        if response.status_code == 200:
+            result = response.json()
+            console.print("\n[bold green]Response Body:[/bold green]")
+            console.print(Syntax(json.dumps(result, indent=2), "json", theme="monokai"))
+            console.print(f"\n[bold green]✓ Redeployment triggered successfully for application: {app_id}[/bold green]")
+        else:
+            console.print("\n[bold red]Error Response:[/bold red]")
+            try:
+                error_data = response.json()
+                console.print(Syntax(json.dumps(error_data, indent=2), "json", theme="monokai"))
+
+                if response.status_code == 404:
+                    console.print(f"\n[yellow]Application with ID '{app_id}' not found[/yellow]")
+                elif response.status_code == 401:
+                    console.print("\n[yellow]Authentication failed. Check your API key.[/yellow]")
+            except json.JSONDecodeError:
+                console.print(response.text)
+            sys.exit(1)
+
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]Request failed: {e}[/red]")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Failed to parse JSON response: {e}[/red]")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
