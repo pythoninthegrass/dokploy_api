@@ -1,0 +1,21 @@
+[project]
+name = "dokploy-api"
+version = "0.1.0"
+authors = [
+    { name = "pythoninthegrass", email = "4097471+pythoninthegrass@users.noreply.github.com" }
+]
+
+requires-python = ">=3.13,<3.14"
+
+dependencies = [
+    "requests>=2.32.5",
+    "click>=8.1.0",
+    "pyyaml>=6.0",
+    "rich>=13.0.0",
+    "python-decouple>=3.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.14.4",
+]

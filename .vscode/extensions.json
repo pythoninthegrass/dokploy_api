@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "charliermarsh.ruff",
+    "codezombiech.gitignore",
+    "DavidAnson.vscode-markdownlint",
+    "EditorConfig.EditorConfig",
+    "edwinhuish.better-comments-next",
+    "ms-python.python",
+    "ryu1kn.partial-diff",
+    "timonwong.shellcheck",
+  ]
+}
