@@ -1,18 +1,4 @@
-#!/usr/bin/env -S uv run --script
-
-# /// script
-# requires-python = ">=3.13,<3.14"
-# dependencies = [
-#     "requests>=2.32.5",
-#     "click>=8.1.0",
-#     "rich>=13.0.0",
-#     "python-decouple>=3.8",
-# ]
-# [tool.uv]
-# exclude-newer = "2025-10-31T00:00:00Z"
-# ///
-
-# pyright: reportMissingImports=false
+#!/usr/bin/env python
 
 """
 Dokploy API Tool
@@ -31,6 +17,11 @@ Usage:
     api.py deployments --app-id <APP_ID> [--limit N] [--api-key KEY] [--url URL]
     api.py deploy --app-id <APP_ID> [--title TITLE] [--description DESC] [--api-key KEY] [--url URL]
     api.py redeploy --app-id <APP_ID> [--title TITLE] [--description DESC] [--api-key KEY] [--url URL]
+    api.py github-providers [--api-key KEY] [--url URL]
+    api.py connect-github --app-id <APP_ID> --github-id <PROVIDER_ID> --owner <OWNER> [--repository REPO] [--branch BRANCH] [--api-key KEY] [--url URL]
+    api.py test-github --github-id <PROVIDER_ID> [--api-key KEY] [--url URL]
+    api.py docker-containers --app-name <APP_NAME> [--app-type TYPE] [--server-id ID] [--api-key KEY] [--url URL]
+    api.py docker-list [--server-id ID] [--api-key KEY] [--url URL]
 
 Commands:
     create: Test a create endpoint and show response
@@ -44,6 +35,11 @@ Commands:
     deployments: List deployment history for an application
     deploy: Trigger a new deployment for an application
     redeploy: Trigger a redeployment for an application
+    github-providers: List all GitHub providers
+    connect-github: Connect an application to a GitHub provider
+    test-github: Test GitHub provider connection
+    docker-containers: List Docker containers by application name
+    docker-list: List all Docker containers
 
 Resources:
     application, project, compose, domain, etc.
@@ -96,17 +92,11 @@ def create(resource, api_key, url, env_id):
 
     # Resource-specific test data
     test_data = {
-        "application": {
-            "name": f"test-{resource}",
-            "environmentId": env_id or "J86P6quzU2DaMBM2gxNjj"
-        },
+        "application": {"name": f"test-{resource}", "environmentId": env_id or "J86P6quzU2DaMBM2gxNjj"},
         "project": {
             "name": f"test-{resource}",
         },
-        "compose": {
-            "name": f"test-{resource}",
-            "environmentId": env_id or "J86P6quzU2DaMBM2gxNjj"
-        },
+        "compose": {"name": f"test-{resource}", "environmentId": env_id or "J86P6quzU2DaMBM2gxNjj"},
     }
 
     if resource not in test_data:
@@ -116,11 +106,7 @@ def create(resource, api_key, url, env_id):
         data = test_data[resource]
 
     endpoint = f"{base_url}/api/{resource}.create"
-    headers = {
-        "accept": "application/json",
-        "x-api-key": api_key,
-        "Content-Type": "application/json"
-    }
+    headers = {"accept": "application/json", "x-api-key": api_key, "Content-Type": "application/json"}
 
     console.print(Panel(f"Testing: POST {endpoint}", style="bold cyan"))
     console.print("\n[bold]Request Data:[/bold]")
@@ -161,7 +147,9 @@ def create(resource, api_key, url, env_id):
             console.print(table)
 
             if id_field:
-                console.print(f"\n[bold green]✓ Success! {resource.capitalize()} created with ID: {result[id_field]}[/bold green]")
+                console.print(
+                    f"\n[bold green]✓ Success! {resource.capitalize()} created with ID: {result[id_field]}[/bold green]"
+                )
             else:
                 console.print(f"\n[yellow]⚠ Warning: No ID field found in response! Expected '{resource}Id' or 'id'[/yellow]")
         else:
@@ -250,11 +238,7 @@ def update(resource, resource_id, api_key, url, field):
             console.print(f"[yellow]Warning: Skipping invalid field format: {f}[/yellow]")
 
     endpoint = f"{base_url}/api/{resource}.update"
-    headers = {
-        "accept": "application/json",
-        "x-api-key": api_key,
-        "Content-Type": "application/json"
-    }
+    headers = {"accept": "application/json", "x-api-key": api_key, "Content-Type": "application/json"}
 
     console.print(Panel(f"Testing: POST {endpoint}", style="bold cyan"))
     console.print("\n[bold]Request Data:[/bold]")
@@ -312,11 +296,7 @@ def delete(resource, resource_id, api_key, url):
     id_field = f"{resource}Id"
     data = {id_field: resource_id}
 
-    headers = {
-        "accept": "application/json",
-        "x-api-key": api_key,
-        "Content-Type": "application/json"
-    }
+    headers = {"accept": "application/json", "x-api-key": api_key, "Content-Type": "application/json"}
 
     # Try .remove endpoint first, then fallback to .delete
     for operation in ["remove", "delete"]:
@@ -339,7 +319,9 @@ def delete(resource, resource_id, api_key, url):
                 except json.JSONDecodeError:
                     console.print("\n[bold green]Success! Resource deleted (empty response)[/bold green]")
 
-                console.print(f"\n[bold green]✓ Success! {resource.capitalize()} deleted via .{operation} endpoint with ID: {resource_id}[/bold green]")
+                console.print(
+                    f"\n[bold green]✓ Success! {resource.capitalize()} deleted via .{operation} endpoint with ID: {resource_id}[/bold green]"
+                )
                 return
             elif response.status_code == 404 and operation == "remove":
                 console.print(f"\n[yellow]⚠ .{operation} endpoint not found, trying .delete...[/yellow]")
@@ -484,7 +466,8 @@ def query(resource, api_key, url, filter, limit):
                 filtered_items = result
                 for key, value in filters.items():
                     filtered_items = [
-                        item for item in filtered_items
+                        item
+                        for item in filtered_items
                         if isinstance(item, dict) and str(item.get(key, "")).lower().find(value.lower()) != -1
                     ]
 
@@ -564,11 +547,7 @@ def batch_delete(resource, resource_ids, api_key, url, delay):
             id_field = f"{resource}Id"
             data = {id_field: resource_id}
 
-            headers = {
-                "accept": "application/json",
-                "x-api-key": api_key,
-                "Content-Type": "application/json"
-            }
+            headers = {"accept": "application/json", "x-api-key": api_key, "Content-Type": "application/json"}
 
             # Try .remove endpoint first, then fallback to .delete
             deleted = False
@@ -678,7 +657,7 @@ def domains(app_id, api_key, url):
                             "✓" if domain.get("https") else "✗",
                             str(domain.get("port", "")),
                             str(domain.get("path", "")),
-                            str(domain.get("certificateType", ""))
+                            str(domain.get("certificateType", "")),
                         )
 
                     console.print(table)
@@ -766,7 +745,7 @@ def deployments(app_id, api_key, url, limit):
                             str(deployment.get("status", "")),
                             str(deployment.get("createdAt", ""))[:19],
                             str(deployment.get("title", ""))[:30],
-                            str(deployment.get("logPath", ""))[:40]
+                            str(deployment.get("logPath", ""))[:40],
                         )
 
                     console.print(table)
@@ -819,11 +798,7 @@ def deploy(app_id, title, description, api_key, url):
         sys.exit(1)
 
     endpoint = f"{base_url}/api/application.deploy"
-    headers = {
-        "accept": "application/json",
-        "x-api-key": api_key,
-        "Content-Type": "application/json"
-    }
+    headers = {"accept": "application/json", "x-api-key": api_key, "Content-Type": "application/json"}
 
     # Build request data
     data = {"applicationId": app_id}
@@ -885,11 +860,7 @@ def redeploy(app_id, title, description, api_key, url):
         sys.exit(1)
 
     endpoint = f"{base_url}/api/application.redeploy"
-    headers = {
-        "accept": "application/json",
-        "x-api-key": api_key,
-        "Content-Type": "application/json"
-    }
+    headers = {"accept": "application/json", "x-api-key": api_key, "Content-Type": "application/json"}
 
     # Build request data
     data = {"applicationId": app_id}
@@ -921,6 +892,410 @@ def redeploy(app_id, title, description, api_key, url):
                 if response.status_code == 404:
                     console.print(f"\n[yellow]Application with ID '{app_id}' not found[/yellow]")
                 elif response.status_code == 401:
+                    console.print("\n[yellow]Authentication failed. Check your API key.[/yellow]")
+            except json.JSONDecodeError:
+                console.print(response.text)
+            sys.exit(1)
+
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]Request failed: {e}[/red]")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Failed to parse JSON response: {e}[/red]")
+        sys.exit(1)
+
+
+@cli.command()
+@click.option("--api-key", envvar="API_KEY", help="Dokploy API key")
+@click.option("--url", envvar="BASE_URL", help="Dokploy base URL")
+def github_providers(api_key, url):
+    """List all GitHub providers"""
+    config = load_config()
+    api_key = api_key or config["api_key"]
+    base_url = url or config["base_url"]
+
+    if not api_key:
+        console.print("[red]Error: API_KEY not found[/red]")
+        sys.exit(1)
+
+    endpoint = f"{base_url}/api/github.githubProviders"
+    headers = {
+        "accept": "application/json",
+        "x-api-key": api_key,
+    }
+
+    console.print(Panel(f"Testing: GET {endpoint}", style="bold cyan"))
+
+    try:
+        response = requests.get(endpoint, headers=headers)
+
+        console.print(f"\n[bold]Status Code:[/bold] {response.status_code}")
+
+        if response.status_code == 200:
+            result = response.json()
+
+            if isinstance(result, list):
+                console.print(f"\n[bold green]Found {len(result)} GitHub provider(s)[/bold green]")
+
+                if result:
+                    console.print("\n[bold]GitHub Providers:[/bold]")
+
+                    table = Table(show_header=True, header_style="bold magenta")
+                    table.add_column("Provider ID", style="cyan", width=30)
+                    table.add_column("Name", style="green", width=20)
+                    table.add_column("Account ID", style="yellow", width=20)
+                    table.add_column("Created At", style="blue")
+
+                    for provider in result:
+                        table.add_row(
+                            str(provider.get("githubId", ""))[:30],
+                            str(provider.get("githubAppName", ""))[:20],
+                            str(provider.get("accountId", ""))[:20],
+                            str(provider.get("createdAt", ""))[:19],
+                        )
+
+                    console.print(table)
+
+                    # Show full details for first provider
+                    if len(result) > 0:
+                        console.print("\n[bold]Full Details (first provider):[/bold]")
+                        console.print(Syntax(json.dumps(result[0], indent=2), "json", theme="monokai"))
+                else:
+                    console.print("\n[yellow]No GitHub providers found[/yellow]")
+            else:
+                console.print("\n[bold green]Response Body:[/bold green]")
+                console.print(Syntax(json.dumps(result, indent=2), "json", theme="monokai"))
+        else:
+            console.print("\n[bold red]Error Response:[/bold red]")
+            try:
+                error_data = response.json()
+                console.print(Syntax(json.dumps(error_data, indent=2), "json", theme="monokai"))
+
+                if response.status_code == 401:
+                    console.print("\n[yellow]Authentication failed. Check your API key.[/yellow]")
+            except json.JSONDecodeError:
+                console.print(response.text)
+            sys.exit(1)
+
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]Request failed: {e}[/red]")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Failed to parse JSON response: {e}[/red]")
+        sys.exit(1)
+
+
+@cli.command()
+@click.option("--app-id", required=True, help="Application ID to connect")
+@click.option("--github-id", required=True, help="GitHub provider ID")
+@click.option("--owner", required=True, help="GitHub repository owner (username or org)")
+@click.option("--repository", help="Repository name")
+@click.option("--branch", default="main", help="Branch name (default: main)")
+@click.option("--build-path", default="/", help="Build path (default: /)")
+@click.option("--enable-submodules", is_flag=True, help="Enable git submodules")
+@click.option("--trigger-type", type=click.Choice(["push", "tag"]), default="push", help="Trigger type (default: push)")
+@click.option("--api-key", envvar="API_KEY", help="Dokploy API key")
+@click.option("--url", envvar="BASE_URL", help="Dokploy base URL")
+def connect_github(app_id, github_id, owner, repository, branch, build_path, enable_submodules, trigger_type, api_key, url):
+    """Connect an application to a GitHub provider"""
+    config = load_config()
+    api_key = api_key or config["api_key"]
+    base_url = url or config["base_url"]
+
+    if not api_key:
+        console.print("[red]Error: API_KEY not found[/red]")
+        sys.exit(1)
+
+    endpoint = f"{base_url}/api/application.saveGithubProvider"
+    headers = {"accept": "application/json", "x-api-key": api_key, "Content-Type": "application/json"}
+
+    # Build request data
+    data = {
+        "applicationId": app_id,
+        "githubId": github_id,
+        "owner": owner,
+        "enableSubmodules": enable_submodules,
+        "triggerType": trigger_type,
+    }
+
+    if repository:
+        data["repository"] = repository
+    if branch:
+        data["branch"] = branch
+    if build_path:
+        data["buildPath"] = build_path
+
+    console.print(Panel(f"Testing: POST {endpoint}", style="bold cyan"))
+    console.print("\n[bold]Request Data:[/bold]")
+    console.print(Syntax(json.dumps(data, indent=2), "json", theme="monokai"))
+
+    try:
+        response = requests.post(endpoint, headers=headers, json=data)
+
+        console.print(f"\n[bold]Status Code:[/bold] {response.status_code}")
+
+        if response.status_code == 200:
+            result = response.json()
+            console.print("\n[bold green]Response Body:[/bold green]")
+            console.print(Syntax(json.dumps(result, indent=2), "json", theme="monokai"))
+            console.print(
+                f"\n[bold green]✓ Successfully connected application '{app_id}' to GitHub provider '{github_id}'[/bold green]"
+            )
+        else:
+            console.print("\n[bold red]Error Response:[/bold red]")
+            try:
+                error_data = response.json()
+                console.print(Syntax(json.dumps(error_data, indent=2), "json", theme="monokai"))
+
+                if response.status_code == 404:
+                    console.print("\n[yellow]Application or GitHub provider not found[/yellow]")
+                elif response.status_code == 401:
+                    console.print("\n[yellow]Authentication failed. Check your API key.[/yellow]")
+            except json.JSONDecodeError:
+                console.print(response.text)
+            sys.exit(1)
+
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]Request failed: {e}[/red]")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Failed to parse JSON response: {e}[/red]")
+        sys.exit(1)
+
+
+@cli.command()
+@click.option("--github-id", required=True, help="GitHub provider ID to test")
+@click.option("--api-key", envvar="API_KEY", help="Dokploy API key")
+@click.option("--url", envvar="BASE_URL", help="Dokploy base URL")
+def test_github(github_id, api_key, url):
+    """Test GitHub provider connection"""
+    config = load_config()
+    api_key = api_key or config["api_key"]
+    base_url = url or config["base_url"]
+
+    if not api_key:
+        console.print("[red]Error: API_KEY not found[/red]")
+        sys.exit(1)
+
+    endpoint = f"{base_url}/api/github.testConnection"
+    headers = {"accept": "application/json", "x-api-key": api_key, "Content-Type": "application/json"}
+
+    data = {"githubId": github_id}
+
+    console.print(Panel(f"Testing: POST {endpoint}", style="bold cyan"))
+    console.print("\n[bold]Request Data:[/bold]")
+    console.print(Syntax(json.dumps(data, indent=2), "json", theme="monokai"))
+
+    try:
+        response = requests.post(endpoint, headers=headers, json=data)
+
+        console.print(f"\n[bold]Status Code:[/bold] {response.status_code}")
+
+        if response.status_code == 200:
+            result = response.json()
+            console.print("\n[bold green]Response Body:[/bold green]")
+            console.print(Syntax(json.dumps(result, indent=2), "json", theme="monokai"))
+            console.print("\n[bold green]✓ GitHub provider connection test successful[/bold green]")
+        else:
+            console.print("\n[bold red]Error Response:[/bold red]")
+            try:
+                error_data = response.json()
+                console.print(Syntax(json.dumps(error_data, indent=2), "json", theme="monokai"))
+
+                if response.status_code == 404:
+                    console.print(f"\n[yellow]GitHub provider with ID '{github_id}' not found[/yellow]")
+                elif response.status_code == 401:
+                    console.print("\n[yellow]Authentication failed. Check your API key.[/yellow]")
+            except json.JSONDecodeError:
+                console.print(response.text)
+            sys.exit(1)
+
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]Request failed: {e}[/red]")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Failed to parse JSON response: {e}[/red]")
+        sys.exit(1)
+
+
+@cli.command()
+@click.option("--app-name", required=True, help="Application name pattern to match")
+@click.option("--app-type", type=click.Choice(["stack", "docker-compose"]), help="Application type filter")
+@click.option("--server-id", help="Server ID to query")
+@click.option("--api-key", envvar="API_KEY", help="Dokploy API key")
+@click.option("--url", envvar="BASE_URL", help="Dokploy base URL")
+def docker_containers(app_name, app_type, server_id, api_key, url):
+    """List Docker containers by application name pattern"""
+    config = load_config()
+    api_key = api_key or config["api_key"]
+    base_url = url or config["base_url"]
+
+    if not api_key:
+        console.print("[red]Error: API_KEY not found[/red]")
+        sys.exit(1)
+
+    # Build query parameters
+    params = {"appName": app_name}
+    if app_type:
+        params["appType"] = app_type
+    if server_id:
+        params["serverId"] = server_id
+
+    query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+    endpoint = f"{base_url}/api/docker.getContainersByAppNameMatch?{query_string}"
+
+    headers = {
+        "accept": "application/json",
+        "x-api-key": api_key,
+    }
+
+    console.print(Panel(f"Testing: GET {endpoint}", style="bold cyan"))
+
+    try:
+        response = requests.get(endpoint, headers=headers)
+
+        console.print(f"\n[bold]Status Code:[/bold] {response.status_code}")
+
+        if response.status_code == 200:
+            result = response.json()
+
+            if isinstance(result, list):
+                console.print(f"\n[bold green]Found {len(result)} container(s) matching '{app_name}'[/bold green]")
+
+                if result:
+                    console.print("\n[bold]Docker Containers:[/bold]")
+
+                    table = Table(show_header=True, header_style="bold magenta")
+                    table.add_column("Container ID", style="cyan", width=15)
+                    table.add_column("Name", style="green", width=30)
+                    table.add_column("State", style="yellow", width=12)
+                    table.add_column("Status", style="blue", width=25)
+                    table.add_column("Image", style="magenta", width=30)
+
+                    for container in result:
+                        # Handle both direct fields and nested structure
+                        container_id = str(container.get("Id", container.get("containerId", "")))[:12]
+                        names = container.get("Names", [])
+                        name = names[0] if names else str(container.get("name", ""))[:30]
+                        state = str(container.get("State", ""))
+                        status = str(container.get("Status", ""))[:25]
+                        image = str(container.get("Image", ""))[:30]
+
+                        table.add_row(container_id, name, state, status, image)
+
+                    console.print(table)
+
+                    # Show full details for first container
+                    if len(result) > 0:
+                        console.print("\n[bold]Full Details (first container):[/bold]")
+                        console.print(Syntax(json.dumps(result[0], indent=2), "json", theme="monokai"))
+                else:
+                    console.print(f"\n[yellow]No containers found matching '{app_name}'[/yellow]")
+            else:
+                console.print("\n[bold green]Response Body:[/bold green]")
+                console.print(Syntax(json.dumps(result, indent=2), "json", theme="monokai"))
+        else:
+            console.print("\n[bold red]Error Response:[/bold red]")
+            try:
+                error_data = response.json()
+                console.print(Syntax(json.dumps(error_data, indent=2), "json", theme="monokai"))
+
+                if response.status_code == 404:
+                    console.print(f"\n[yellow]No containers found or invalid app name: '{app_name}'[/yellow]")
+                elif response.status_code == 401:
+                    console.print("\n[yellow]Authentication failed. Check your API key.[/yellow]")
+            except json.JSONDecodeError:
+                console.print(response.text)
+            sys.exit(1)
+
+    except requests.exceptions.RequestException as e:
+        console.print(f"[red]Request failed: {e}[/red]")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Failed to parse JSON response: {e}[/red]")
+        sys.exit(1)
+
+
+@cli.command()
+@click.option("--server-id", help="Server ID to query")
+@click.option("--api-key", envvar="API_KEY", help="Dokploy API key")
+@click.option("--url", envvar="BASE_URL", help="Dokploy base URL")
+def docker_list(server_id, api_key, url):
+    """List all Docker containers"""
+    config = load_config()
+    api_key = api_key or config["api_key"]
+    base_url = url or config["base_url"]
+
+    if not api_key:
+        console.print("[red]Error: API_KEY not found[/red]")
+        sys.exit(1)
+
+    endpoint = f"{base_url}/api/docker.getContainers"
+    if server_id:
+        endpoint += f"?serverId={server_id}"
+
+    headers = {
+        "accept": "application/json",
+        "x-api-key": api_key,
+    }
+
+    console.print(Panel(f"Testing: GET {endpoint}", style="bold cyan"))
+
+    try:
+        response = requests.get(endpoint, headers=headers)
+
+        console.print(f"\n[bold]Status Code:[/bold] {response.status_code}")
+
+        if response.status_code == 200:
+            result = response.json()
+
+            if isinstance(result, list):
+                console.print(f"\n[bold green]Found {len(result)} container(s)[/bold green]")
+
+                if result:
+                    console.print("\n[bold]Docker Containers:[/bold]")
+
+                    table = Table(show_header=True, header_style="bold magenta")
+                    table.add_column("Container ID", style="cyan", width=15)
+                    table.add_column("Name", style="green", width=30)
+                    table.add_column("State", style="yellow", width=12)
+                    table.add_column("Status", style="blue", width=25)
+                    table.add_column("Image", style="magenta", width=30)
+
+                    for container in result:
+                        # Handle both direct fields and nested structure
+                        container_id = str(container.get("Id", container.get("containerId", "")))[:12]
+                        names = container.get("Names", [])
+                        name = names[0] if names else str(container.get("name", ""))[:30]
+                        state = str(container.get("State", ""))
+                        status = str(container.get("Status", ""))[:25]
+                        image = str(container.get("Image", ""))[:30]
+
+                        table.add_row(container_id, name, state, status, image)
+
+                    console.print(table)
+
+                    # Show summary by state
+                    states = {}
+                    for container in result:
+                        state = container.get("State", "unknown")
+                        states[state] = states.get(state, 0) + 1
+
+                    console.print("\n[bold]Summary by State:[/bold]")
+                    for state, count in sorted(states.items()):
+                        console.print(f"  {state}: {count}")
+                else:
+                    console.print("\n[yellow]No containers found[/yellow]")
+            else:
+                console.print("\n[bold green]Response Body:[/bold green]")
+                console.print(Syntax(json.dumps(result, indent=2), "json", theme="monokai"))
+        else:
+            console.print("\n[bold red]Error Response:[/bold red]")
+            try:
+                error_data = response.json()
+                console.print(Syntax(json.dumps(error_data, indent=2), "json", theme="monokai"))
+
+                if response.status_code == 401:
                     console.print("\n[yellow]Authentication failed. Check your API key.[/yellow]")
             except json.JSONDecodeError:
                 console.print(response.text)

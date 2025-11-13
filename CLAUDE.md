@@ -8,18 +8,72 @@ A collection of Python CLI tools for testing, inspecting, and analyzing the Dokp
 API. These tools help understand API response formats, validate endpoint coverage,
 extract OpenAPI specifications, and generate documentation.
 
-## General
+## Installation
 
-- Always activate the virtual environment (.venv) via `uv run`
+### Global Installation (Recommended)
+
+Install as a global CLI tool:
+
+```bash
+uv tool install git+https://github.com/pythoninthegrass/dokploy_api
+```
+
+After installation, configure via environment variables:
+
+```bash
+# Set environment variables
+export API_KEY="your-dokploy-api-key"
+export BASE_URL="https://your-dokploy-instance.com"
+
+# Add to shell profile for persistence
+echo 'export API_KEY="your-api-key"' >> ~/.bashrc
+echo 'export BASE_URL="https://your-instance.com"' >> ~/.bashrc
+```
+
+Then use the `dokploy` command directly:
+
+```bash
+dokploy list project
+dokploy get application <id>
+dokploy deploy --app-id <id>
+
+# Or set per-command
+API_KEY="key" BASE_URL="https://your-dokploy-instance.com" dokploy list project
+```
+
+### Local Development
+
+For local development, create a `.env` file in the project root:
+
+```bash
+# Create .env file
+cat > .env << 'EOF'
+API_KEY=your-dokploy-api-key
+BASE_URL=https://your-dokploy-instance.com
+EOF
+```
+
+Then run with `uv run`:
+
+```bash
+uv run api.py list project
+```
+
+## Linting
+
+```bash
+# Check formatting
+uv run ruff format --check --diff .
+
+# Apply formatting
+uv run ruff format .
+```
 
 ## Context7 Libraries
 
-- glanceapp/glance
 - websites/docs_dokploy_com-docs-core
 - mrlesk/backlog.md
-- docker/docs
-- stackexchange/dnscontrol
-- websites/taskfile_dev
+- websites/astral_sh_uv
 
 ## Core Files
 
@@ -43,48 +97,63 @@ validate.py)
 
 ## Dependencies
 
-All scripts use PEP 723 inline metadata with `uv`:
+Dependencies are managed via `pyproject.toml`:
 
-```python
-# requires-python = ">=3.13,<3.14"
-# dependencies = [
-#     "requests>=2.32.5",
-#     "click>=8.1.0",
-#     "rich>=13.0.0",
-#     "python-decouple>=3.8",
-#     "pyyaml>=6.0",  # extract.py only
-# ]
-```
+- requests>=2.32.5 - HTTP client for API requests
+- click>=8.1.0 - CLI framework
+- rich>=13.0.0 - Terminal formatting and display
+- python-decouple>=3.8 - Environment variable management
+- pyyaml>=6.0 - YAML parsing (extract.py)
 
 ## Environment Configuration
 
-Create .env file in repository root:
+The `load_config()` function in `lib/dokploy.py` supports multiple configuration methods:
+
+### For Global Tool Installation
+
+Set environment variables in your shell profile:
+
+```bash
+# Add to ~/.zshrc or ~/.bashrc
+export API_KEY="your-dokploy-api-key"
+export BASE_URL="https://your-dokploy-instance.com"
+```
+
+### For Local Development
+
+Create `.env` file in repository root:
 
 ```bash
 API_KEY=your-dokploy-api-key
 BASE_URL=https://your-dokploy-instance.com
 ```
 
-All scripts automatically load from .env via lib/dokploy.py:load_config()
+### Priority Order
+
+Configuration is loaded in this order (first found wins):
+1. `.env` file (if it exists relative to script location)
+2. Environment variables (`os.environ`)
+3. Command-line flags (`--api-key`, `--url`)
 
 ## Common Commands
 
-### API Testing (api.py)
+### API Testing (api.py / dokploy command)
 
 ```bash
-
 # CRUD operations
-uv run api.py create project
-uv run api.py get project <id>
-uv run api.py update project <id> --field name=updated
-uv run api.py delete project <id>  # Tries .remove then .delete
+dokploy create project
+dokploy get project <id>
+dokploy update project <id> --field name=updated
+dokploy delete project <id>  # Tries .remove then .delete
 
 # List and query
-uv run api.py list project --limit 10
-uv run api.py query domain --filter host=example.com
+dokploy list project --limit 10
+dokploy query domain --filter host=example.com
 
 # Batch operations
-uv run api.py batch-delete project <id1> <id2> <id3> --delay 0.5
+dokploy batch-delete project <id1> <id2> <id3> --delay 0.5
+
+# For local development, use: uv run api.py <command>
 ```
 
 ### OpenAPI Extraction (extract.py)

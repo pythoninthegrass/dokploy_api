@@ -67,10 +67,9 @@ def search_endpoints(endpoints: list[dict[str, Any]], term: str) -> list[dict[st
     """Search endpoints by path, summary, or description."""
     term_lower = term.lower()
     return [
-        ep for ep in endpoints
-        if term_lower in ep["path"].lower()
-        or term_lower in ep["summary"].lower()
-        or term_lower in ep["description"].lower()
+        ep
+        for ep in endpoints
+        if term_lower in ep["path"].lower() or term_lower in ep["summary"].lower() or term_lower in ep["description"].lower()
     ]
 
 
@@ -83,12 +82,7 @@ def display_endpoints_table(endpoints: list[dict[str, Any]]) -> None:
     table.add_column("Tags", style="yellow")
 
     for ep in endpoints:
-        table.add_row(
-            ep["method"],
-            ep["path"],
-            ep["summary"],
-            ", ".join(ep["tags"])
-        )
+        table.add_row(ep["method"], ep["path"], ep["summary"], ", ".join(ep["tags"]))
 
     console.print(table)
     console.print(f"\n[bold]Total endpoints: {len(endpoints)}[/bold]")
@@ -180,10 +174,7 @@ def generate_terraform_scaffold(endpoints: list[dict[str, Any]], output: str | N
     scaffold = {
         "provider": "dokploy",
         "resources": resources,
-        "metadata": {
-            "total_resources": len(resources),
-            "total_endpoints": len(endpoints)
-        }
+        "metadata": {"total_resources": len(resources), "total_endpoints": len(endpoints)},
     }
 
     data = json.dumps(scaffold, indent=2)

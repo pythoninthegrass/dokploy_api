@@ -15,6 +15,9 @@ dependencies = [
     "python-decouple>=3.8",
 ]
 
+[project.scripts]
+dokploy = "api:cli"
+
 [project.optional-dependencies]
 dev = [
     "ruff>=0.14.4",
@@ -28,6 +31,7 @@ test = [
     "pytest-cov>=6.1.1",
     "pytest-datafiles<4.0.0,>=3.0.0",
     "pytest-xdist<4.0.0,>=3.6.1",
+    "responses>=0.25.0",
 ]
 
 [tool.pytest.ini_options]
@@ -42,3 +46,11 @@ markers = [
     "e2e: marks tests as end-to-end tests",
     "benchmark: marks performance benchmark tests"
 ]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["api", "extract", "schema", "validate"]
+packages = ["lib"]

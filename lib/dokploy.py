@@ -49,10 +49,7 @@ def fetch_openapi_spec(base_url: str, api_key: str, timeout: float = 30.0) -> di
         json.JSONDecodeError: If response is not valid JSON
     """
     url = f"{base_url}/api/settings.getOpenApiDocument"
-    headers = {
-        "accept": "application/json",
-        "x-api-key": api_key
-    }
+    headers = {"accept": "application/json", "x-api-key": api_key}
 
     response = requests.get(url, headers=headers, timeout=timeout)
     response.raise_for_status()
@@ -96,7 +93,7 @@ def extract_endpoints(openapi_spec: dict[str, Any]) -> list[dict[str, Any]]:
                     "summary": details.get("summary", ""),
                     "description": details.get("description", ""),
                     "tags": details.get("tags", []),
-                    "operationId": details.get("operationId", "")
+                    "operationId": details.get("operationId", ""),
                 }
                 endpoints.append(endpoint)
 
@@ -104,11 +101,7 @@ def extract_endpoints(openapi_spec: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def make_api_request(
-    endpoint: str,
-    method: str,
-    api_key: str,
-    data: dict | None = None,
-    params: dict | None = None
+    endpoint: str, method: str, api_key: str, data: dict | None = None, params: dict | None = None
 ) -> requests.Response:
     """Make authenticated API request to Dokploy.
 

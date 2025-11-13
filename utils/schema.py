@@ -19,20 +19,33 @@ from typing import Any
 
 # Priority resources to extract
 PRIORITY_RESOURCES = [
-    "project", "application", "auth", "backup", "cluster", "compose",
-    "deployment", "docker", "domain", "github", "mounts", "notification",
-    "port", "registry", "security", "server", "settings", "sshKey", "user"
+    "project",
+    "application",
+    "auth",
+    "backup",
+    "cluster",
+    "compose",
+    "deployment",
+    "docker",
+    "domain",
+    "github",
+    "mounts",
+    "notification",
+    "port",
+    "registry",
+    "security",
+    "server",
+    "settings",
+    "sshKey",
+    "user",
 ]
 
 # Removed load_openapi_spec() - now using shared lib.dokploy.load_openapi_from_file()
 
+
 def extract_schema_for_resource(openapi_spec: dict[str, Any], resource: str) -> dict[str, Any]:
     """Extract schema information for a specific resource."""
-    result = {
-        "resource": resource,
-        "endpoints": [],
-        "schemas": {}
-    }
+    result = {"resource": resource, "endpoints": [], "schemas": {}}
 
     # Extract endpoints for this resource
     paths = openapi_spec.get("paths", {})
@@ -49,7 +62,7 @@ def extract_schema_for_resource(openapi_spec: dict[str, Any], resource: str) -> 
                         "operationId": details.get("operationId", ""),
                         "parameters": details.get("parameters", []),
                         "requestBody": details.get("requestBody", {}),
-                        "responses": details.get("responses", {})
+                        "responses": details.get("responses", {}),
                     }
                     result["endpoints"].append(endpoint_info)
 
@@ -64,16 +77,12 @@ def extract_schema_for_resource(openapi_spec: dict[str, Any], resource: str) -> 
 
     return result
 
+
 def write_schema_markdown(resource: str, schema_data: dict[str, Any]) -> None:
     """Write schema information as markdown."""
     output_path = Path(f"docs/schemas/{resource}.md")
 
-    lines = [
-        f"# {resource.capitalize()} Resource Schema",
-        "",
-        "## Endpoints",
-        ""
-    ]
+    lines = [f"# {resource.capitalize()} Resource Schema", "", "## Endpoints", ""]
 
     # Document endpoints
     if schema_data["endpoints"]:
@@ -139,6 +148,7 @@ def write_schema_markdown(resource: str, schema_data: dict[str, Any]) -> None:
     output_path.write_text("\n".join(lines))
     print(f"Created {output_path}")
 
+
 def main():
     """Main function."""
     print("Loading OpenAPI specification...")
@@ -153,6 +163,7 @@ def main():
 
     print("\nCompleted!")
     print("Generated schema documentation in docs/schemas/")
+
 
 if __name__ == "__main__":
     main()

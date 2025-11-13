@@ -120,6 +120,7 @@ NON_VIABLE_RESOURCES = {
 
 # Removed load_openapi_spec() - now using shared lib.dokploy.load_openapi_from_file()
 
+
 def load_endpoints(endpoints_path: Path) -> dict:
     """Load the endpoints inventory from JSON file."""
     with open(endpoints_path) as f:
@@ -337,8 +338,7 @@ def generate_report():
     print()
 
 
-def save_markdown_report(coverage_report: dict, uncovered_endpoints: dict,
-                         spec_endpoints: dict, output_path: Path):
+def save_markdown_report(coverage_report: dict, uncovered_endpoints: dict, spec_endpoints: dict, output_path: Path):
     """Save the coverage report as a Markdown file."""
     total_endpoints = sum(len(eps) for eps in spec_endpoints.values())
     total_covered = sum(len(report["covered_endpoints"]) for report in coverage_report.values())
